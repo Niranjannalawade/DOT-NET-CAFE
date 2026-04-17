@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Dot-Net{% endblock %}</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+{% block head %}{% endblock %}
+</head>
+<body>
+<div class="app-wrapper">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="fa-solid fa-wifi"></i></div>
+      <div><div class="logo-text">Dot-Net<br>CyberCafe</div><div class="logo-sub">Management System</div></div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <ul class="nav-links">
+      <li><a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint=='dashboard' %}active{% endif %}"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a></li>
+      <li><a href="{{ url_for('customers') }}" class="nav-link {% if 'customer' in (request.endpoint or '') %}active{% endif %}"><i class="fa-solid fa-users"></i><span>Customers</span></a></li>
+      <li><a href="{{ url_for('billing') }}" class="nav-link {% if request.endpoint=='billing' %}active{% endif %}"><i class="fa-solid fa-file-invoice"></i><span>Billing</span></a></li>
+      <li><a href="{{ url_for('invoices') }}" class="nav-link {% if request.endpoint=='invoices' %}active{% endif %}"><i class="fa-solid fa-receipt"></i><span>Invoices</span></a></li>
+      <li><a href="{{ url_for('export_customers') }}" class="nav-link"><i class="fa-solid fa-file-excel"></i><span>Export Excel</span></a></li>
+    </ul>
+    <div class="sidebar-bottom">
+      <div class="admin-badge">
+        <div class="admin-avatar"><i class="fa-solid fa-user-shield"></i></div>
+        <div><div class="admin-name">Administrator</div><div class="admin-role">Full Access</div></div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+    </div>
+  </nav>
+  <main class="main-content" id="mainContent">
+    <div class="topbar">
+      <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+      <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
+      <div class="topbar-right"><div class="time-display" id="timeDisplay"></div></div>
+    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+      {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}"><i class="fa-solid fa-{% if cat=='success' %}check-circle{% else %}exclamation-circle{% endif %}"></i> {{ msg }}<button onclick="this.parentElement.remove()">×</button></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    <div class="content-area fade-in">{% block content %}{% endblock %}</div>
+  </main>
+</div>
+<div class="modal-overlay" id="deleteModal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h3>Confirm Delete</h3>
+    <p id="deleteMessage">Are you sure you want to delete this item?</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+      <form id="deleteForm" method="POST"><button type="submit" class="btn btn-danger">Delete</button></form>
+    </div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

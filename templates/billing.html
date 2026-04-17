@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Billing{% endblock %}
+{% block page_title %}<i class="fa-solid fa-file-invoice"></i> New Bill{% endblock %}
+{% block content %}
+<div class="billing-layout">
+  <div class="glass-card billing-form-card">
+    <h3 class="section-title"><i class="fa-solid fa-pen-to-square"></i> Create Invoice</h3>
+    <form id="billingForm" action="{{ url_for('save_bill') }}" method="POST">
+      <div class="form-group">
+        <label><i class="fa-solid fa-user"></i> Customer</label>
+        <select name="customer_id" required>
+          <option value="">-- Select Customer --</option>
+          {% for c in customers %}
+          <option value="{{ c.id }}">{{ c.name }} ({{ c.phone }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="services-section">
+        <div class="section-label">Services</div>
+        <div class="service-presets">
+          <button type="button" onclick="addService('B/W Print','5.00')" class="preset-btn"><i class="fa-solid fa-print"></i> B/W Print</button>
+          <button type="button" onclick="addService('Color Print','10.00')" class="preset-btn"><i class="fa-solid fa-palette"></i> Color Print</button>
+          <button type="button" onclick="addService('Scan','10.00')" class="preset-btn"><i class="fa-solid fa-scanner-image"></i> Scan</button>
+          <button type="button" onclick="addService('Digital Signature','50.00')" class="preset-btn"><i class="fa-solid fa-signature"></i> Digital Sign</button>
+          <button type="button" onclick="addService('','0.00')" class="preset-btn preset-custom"><i class="fa-solid fa-plus"></i> Custom</button>
+        </div>
+        <div id="itemsContainer">
+          <div class="items-header">
+            <span>Service</span><span>Qty</span><span>Price</span><span>Amount</span><span></span>
+          </div>
+          <div id="itemsList"></div>
+        </div>
+        <button type="button" onclick="addService('','0.00')" class="btn btn-ghost btn-sm mt-2"><i class="fa-solid fa-plus"></i> Add Row</button>
+      </div>
+
+      <div class="billing-totals">
+        <div class="total-row"><span>Subtotal</span><span>₹<span id="subtotalDisplay">0.00</span></span></div>
+        <div class="total-row discount-row">
+          <span><i class="fa-solid fa-tag"></i> Discount (₹)</span>
+          <input type="number" id="discountInput" value="0" min="0" step="0.01" onchange="calculateTotals()">
+        </div>
+        <div class="total-row grand-total"><span>Grand Total</span><span>₹<span id="totalDisplay">0.00</span></span></div>
+      </div>
+
+      <input type="hidden" name="items" id="itemsData">
+      <input type="hidden" name="subtotal" id="subtotalData">
+      <input type="hidden" name="discount" id="discountData">
+      <input type="hidden" name="total" id="totalData">
+
+      <div class="form-actions">
+        <button type="submit" onclick="return prepareSubmit()" class="btn btn-primary btn-full"><i class="fa-solid fa-save"></i> Save Invoice</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="glass-card billing-preview-card">
+    <h3 class="section-title"><i class="fa-solid fa-eye"></i> Live Preview</h3>
+    <div class="preview-invoice">
+      <div class="preview-header">
+        <div class="preview-logo"><i class="fa-solid fa-wifi"></i> Dot-Net CyberCafe</div>
+        <div class="preview-inv">Invoice #<span id="previewInv">PENDING</span></div>
+      </div>
+      <div class="preview-date">Date: <span id="previewDate"></span></div>
+      <table class="preview-table">
+        <thead><tr><th>Service</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead>
+        <tbody id="previewItems"><tr><td colspan="4" class="muted" style="text-align:center;padding:1rem">Add services above</td></tr></tbody>
+      </table>
+      <div class="preview-totals">
+        <div>Subtotal: <strong>₹<span id="pSub">0.00</span></strong></div>
+        <div>Discount: <strong>-₹<span id="pDisc">0.00</span></strong></div>
+        <div class="preview-grand">Total: <strong>₹<span id="pTotal">0.00</span></strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let items = [];
+function addService(name, price) {
+  items.push({name: name, qty: 1, price: parseFloat(price)});
+  renderItems(); calculateTotals();
+}
+function removeItem(idx) { items.splice(idx, 1); renderItems(); calculateTotals(); }
+function renderItems() {
+  const list = document.getElementById('itemsList');
+  list.innerHTML = items.map((it, i) => `
+    <div class="item-row">
+      <input type="text" value="${it.name}" placeholder="Service name" onchange="items[${i}].name=this.value;updatePreview()">
+      <input type="number" value="${it.qty}" min="1" onchange="items[${i}].qty=+this.value;calculateTotals()">
+      <input type="number" value="${it.price.toFixed(2)}" min="0" step="0.01" onchange="items[${i}].price=+this.value;calculateTotals()">
+      <span class="item-amount">₹${(it.qty*it.price).toFixed(2)}</span>
+      <button type="button" onclick="removeItem(${i})" class="btn btn-xs btn-danger"><i class="fa-solid fa-times"></i></button>
+    </div>`).join('');
+}
+function calculateTotals() {
+  const sub = items.reduce((s, it) => s + it.qty * it.price, 0);
+  const disc = parseFloat(document.getElementById('discountInput').value) || 0;
+  const total = Math.max(0, sub - disc);
+  document.getElementById('subtotalDisplay').textContent = sub.toFixed(2);
+  document.getElementById('totalDisplay').textContent = total.toFixed(2);
+  updatePreview(sub, disc, total);
+}
+function updatePreview(sub, disc, total) {
+  sub = sub || items.reduce((s, it) => s + it.qty * it.price, 0);
+  disc = disc || parseFloat(document.getElementById('discountInput').value) || 0;
+  total = total || Math.max(0, sub - disc);
+  document.getElementById('pSub').textContent = sub.toFixed(2);
+  document.getElementById('pDisc').textContent = disc.toFixed(2);
+  document.getElementById('pTotal').textContent = total.toFixed(2);
+  document.getElementById('previewDate').textContent = new Date().toLocaleDateString('en-IN');
+  const tbody = document.getElementById('previewItems');
+  if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" class="muted" style="text-align:center;padding:1rem">Add services above</td></tr>'; return; }
+  tbody.innerHTML = items.map(it => `<tr><td>${it.name||'Service'}</td><td>${it.qty}</td><td>₹${it.price.toFixed(2)}</td><td>₹${(it.qty*it.price).toFixed(2)}</td></tr>`).join('');
+}
+function prepareSubmit() {
+  if (!items.length) { alert('Please add at least one service'); return false; }
+  const sub = items.reduce((s, it) => s + it.qty * it.price, 0);
+  const disc = parseFloat(document.getElementById('discountInput').value) || 0;
+  document.getElementById('itemsData').value = JSON.stringify(items);
+  document.getElementById('subtotalData').value = sub;
+  document.getElementById('discountData').value = disc;
+  document.getElementById('totalData').value = Math.max(0, sub - disc);
+  return true;
+}
+updatePreview();
+</script>
+{% endblock %}

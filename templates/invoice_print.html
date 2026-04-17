@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Invoice {{ bill.invoice_number }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sora',sans-serif;background:#f0f4f8;color:#1a1a2e;padding:2rem}
+.no-print{margin-bottom:1.5rem;display:flex;gap:1rem}
+.btn{padding:.6rem 1.5rem;border:none;border-radius:8px;cursor:pointer;font-family:'Sora',sans-serif;font-size:.9rem;font-weight:500;text-decoration:none;display:inline-flex;align-items:center;gap:.5rem}
+.btn-primary{background:linear-gradient(135deg,#7c3aed,#00d4ff);color:#fff}
+.btn-ghost{background:#e2e8f0;color:#4a5568}
+.invoice{background:#fff;max-width:800px;margin:0 auto;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.inv-header{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:#fff;padding:2.5rem}
+.inv-header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.company-name{font-size:1.8rem;font-weight:700;display:flex;align-items:center;gap:.75rem}
+.company-name i{color:#00d4ff}
+.company-sub{font-size:.85rem;color:rgba(255,255,255,.6);margin-top:.25rem}
+.inv-number{text-align:right}
+.inv-number .label{font-size:.8rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em}
+.inv-number .value{font-size:1.5rem;font-weight:700;color:#00d4ff}
+.inv-meta{display:flex;gap:2rem;margin-top:1rem}
+.meta-item .label{font-size:.75rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em}
+.meta-item .value{font-size:.95rem;color:#fff;font-weight:500}
+.inv-body{padding:2.5rem}
+.bill-to{margin-bottom:2rem;padding:1.25rem;background:#f8fafc;border-radius:10px;border-left:4px solid #7c3aed}
+.bill-to .label{font-size:.75rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem}
+.bill-to .name{font-size:1.1rem;font-weight:700;color:#1a1a2e}
+.bill-to .detail{font-size:.9rem;color:#64748b;margin-top:.25rem}
+table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}
+thead tr{background:#1a1a2e;color:#fff}
+th{padding:.9rem 1rem;text-align:left;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em}
+th:last-child{text-align:right}
+td{padding:.9rem 1rem;border-bottom:1px solid #e2e8f0;font-size:.95rem}
+td:last-child{text-align:right;font-weight:600}
+tbody tr:nth-child(even){background:#f8fafc}
+.totals-section{display:flex;justify-content:flex-end;margin-top:1rem}
+.totals-box{width:280px}
+.total-line{display:flex;justify-content:space-between;padding:.5rem 0;font-size:.95rem}
+.total-line.discount{color:#10b981}
+.total-line.grand{border-top:2px solid #1a1a2e;margin-top:.5rem;padding-top:.75rem;font-size:1.15rem;font-weight:700}
+.inv-footer{background:#f8fafc;border-top:1px solid #e2e8f0;padding:1.5rem 2.5rem;text-align:center}
+.thank-you{font-size:1rem;color:#7c3aed;font-weight:600;margin-bottom:.5rem}
+.footer-note{font-size:.8rem;color:#94a3b8}
+.addr{font-size:.8rem;color:#94a3b8;margin-top:.5rem}
+@media print{
+  body{background:#fff;padding:0}
+  .no-print{display:none}
+  .invoice{box-shadow:none;border-radius:0}
+}
+</style>
+</head>
+<body>
+<div class="no-print">
+  <a href="{{ url_for('invoices') }}" class="btn btn-ghost"><i>←</i> Back</a>
+  <button onclick="window.print()" class="btn btn-primary">🖨️ Print Invoice</button>
+</div>
+<div class="invoice">
+  <div class="inv-header">
+    <div class="inv-header-top">
+      <div>
+        <div class="company-name">⚡Dot-Net Cafe</div>
+        <div class="company-sub">SHIVAJI ROAD, OPP REHAMATULLHA RESTAURANT, MIRAJ- 416410</div>
+        <div class="company-sub">Email- dotnetmiraj@gmail.com | Ph.no - 9422616136 | Tel-0233-2220096</div>
+      </div>
+      <div class="inv-number">
+        <div class="label">Invoice Number</div>
+        <div class="value">{{ bill.invoice_number }}</div>
+      </div>
+    </div>
+    <div class="inv-meta">
+      <div class="meta-item"><div class="label">Date</div><div class="value">{{ bill.date.strftime('%d %B %Y') }}</div></div>
+      <div class="meta-item"><div class="label">Time</div><div class="value">{{ bill.date.strftime('%I:%M %p') }}</div></div>
+    </div>
+  </div>
+  <div class="inv-body">
+    <div class="bill-to">
+      <div class="label">Bill To</div>
+      <div class="name">{{ bill.customer.name }}</div>
+      <div class="detail">📞 {{ bill.customer.phone }}{% if bill.customer.email %} &bull; {{ bill.customer.email }}{% endif %}{% if bill.customer.place %} &bull; {{ bill.customer.place }}{% endif %}</div>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Service</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead>
+      <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ item.name or 'Service' }}</td>
+        <td>{{ item.qty }}</td>
+        <td>₹{{ "%.2f"|format(item.price|float) }}</td>
+        <td>₹{{ "%.2f"|format(item.qty|float * item.price|float) }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div class="totals-section">
+      <div class="totals-box">
+        <div class="total-line"><span>Subtotal</span><span>₹{{ "%.2f"|format(bill.subtotal) }}</span></div>
+        <div class="total-line discount"><span>Discount</span><span>-₹{{ "%.2f"|format(bill.discount) }}</span></div>
+        <div class="total-line grand"><span>Grand Total</span><span>₹{{ "%.2f"|format(bill.total) }}</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="inv-footer">
+    <div class="thank-you">✨ Thank You for Your Business!</div>
+    <div class="footer-note">This is a computer-generated invoice. No signature required.</div>
+  </div>
+</div>
+</body>
+</html>

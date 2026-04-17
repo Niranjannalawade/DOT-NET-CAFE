@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - Dot-NetCyberCafe</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-body">
+<div class="login-bg">
+  <div class="login-orb orb1"></div>
+  <div class="login-orb orb2"></div>
+  <div class="login-orb orb3"></div>
+</div>
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon"><i class="fa-solid fa-wifi"></i></div>
+      <h1>Dot-Net CyberCafe</h1>
+      <p>Management & Billing System</p>
+    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for cat, msg in messages %}
+    <div class="flash flash-{{ cat }}"><i class="fa-solid fa-exclamation-circle"></i> {{ msg }}</div>
+    {% endfor %}{% endif %}
+    {% endwith %}
+    <form method="POST" class="login-form">
+      <div class="form-group">
+        <label><i class="fa-solid fa-user"></i> Username</label>
+        <input type="text" name="username" placeholder="Enter username" required autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-lock"></i> Password</label>
+        <input type="password" name="password" placeholder="Enter password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-full"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+    </form>
+    <div class="login-hint">Default: admin / admin123</div>
+  </div>
+</div>
+</body>
+</html>

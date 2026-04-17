@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Invoices{% endblock %}
+{% block page_title %}<i class="fa-solid fa-receipt"></i> Invoice History{% endblock %}
+{% block content %}
+<div class="glass-card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Invoice #</th><th>Customer</th><th>Subtotal</th><th>Discount</th><th>Total</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for b in bills %}
+      <tr>
+        <td><span class="badge badge-blue">{{ b.invoice_number }}</span></td>
+        <td><strong>{{ b.customer.name }}</strong></td>
+        <td>₹{{ "%.2f"|format(b.subtotal) }}</td>
+        <td class="text-green">-₹{{ "%.2f"|format(b.discount) }}</td>
+        <td class="amount"><strong>₹{{ "%.2f"|format(b.total) }}</strong></td>
+        <td class="muted">{{ b.date.strftime('%d %b %Y, %H:%M') }}</td>
+        <td><a href="{{ url_for('invoice_view', bid=b.id) }}" class="btn btn-xs btn-ghost"><i class="fa-solid fa-eye"></i> View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="empty-row">No invoices generated yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

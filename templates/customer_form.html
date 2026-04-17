@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{% if customer %}Edit{% else %}Add{% endif %} Customer{% endblock %}
+{% block page_title %}<i class="fa-solid fa-user-{% if customer %}pen{% else %}plus{% endif %}"></i> {% if customer %}Edit{% else %}Add{% endif %} Customer{% endblock %}
+{% block content %}
+<div class="form-container">
+  <div class="glass-card">
+    <form method="POST">
+      <div class="form-grid">
+        <div class="form-group">
+          <label><i class="fa-solid fa-user"></i> Full Name *</label>
+          <input type="text" name="name" value="{{ customer.name if customer else '' }}" required placeholder="Customer full name">
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-phone"></i> Phone Number *</label>
+          <input type="text" name="phone" value="{{ customer.phone if customer else '' }}" required placeholder="10-digit mobile number">
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-envelope"></i> Email Address</label>
+          <input type="email" name="email" value="{{ customer.email if customer else '' }}" placeholder="Optional email">
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-location-dot"></i> Place / City</label>
+          <input type="text" name="place" value="{{ customer.place if customer else '' }}" placeholder="City or area">
+        </div>
+      </div>
+      <div class="form-actions">
+        <a href="{{ url_for('customers') }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> {% if customer %}Update{% else %}Save{% endif %} Customer</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

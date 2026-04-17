@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Dot-Net{% endblock %}
+{% block page_title %}<i class="fa-solid fa-gauge-high"></i> Dashboard{% endblock %}
+{% block content %}
+<div class="stats-grid">
+  <div class="stat-card" style="--accent:#00d4ff">
+    <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+    <div class="stat-info"><div class="stat-num">{{ total_customers }}</div><div class="stat-label">Total Customers</div></div>
+  </div>
+  <div class="stat-card" style="--accent:#7c3aed">
+    <div class="stat-icon"><i class="fa-solid fa-receipt"></i></div>
+    <div class="stat-info"><div class="stat-num">{{ total_bills }}</div><div class="stat-label">Total Invoices</div></div>
+  </div>
+  <div class="stat-card" style="--accent:#10b981">
+    <div class="stat-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+    <div class="stat-info"><div class="stat-num">₹{{ "%.0f"|format(total_revenue) }}</div><div class="stat-label">Total Revenue</div></div>
+  </div>
+  <div class="stat-card" style="--accent:#f59e0b">
+    <div class="stat-icon"><i class="fa-solid fa-bolt"></i></div>
+    <div class="stat-info"><div class="stat-num">{{ recent_activities|length }}</div><div class="stat-label">Recent Activities</div></div>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <div class="glass-card">
+    <div class="card-header"><h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Invoices</h3>
+      <a href="{{ url_for('invoices') }}" class="btn btn-sm btn-ghost">View All</a></div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Date</th></tr></thead>
+        <tbody>
+        {% for b in recent_bills %}
+        <tr>
+          <td><span class="badge badge-blue">{{ b.invoice_number }}</span></td>
+          <td>{{ b.customer.name }}</td>
+          <td class="amount">₹{{ "%.2f"|format(b.total) }}</td>
+          <td class="muted">{{ b.date.strftime('%d %b %Y') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="empty-row">No invoices yet</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="glass-card">
+    <div class="card-header"><h3><i class="fa-solid fa-timeline"></i> Activity Feed</h3></div>
+    <div class="activity-feed">
+      {% for act in recent_activities %}
+      <div class="activity-item">
+        <div class="activity-dot"></div>
+        <div class="activity-content">
+          <div class="activity-desc">{{ act.description }}</div>
+          <div class="activity-meta">{{ act.customer.name }} &bull; {{ act.date.strftime('%d %b, %H:%M') }}</div>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No recent activity</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="glass-card mt-4">
+  <div class="card-header"><h3><i class="fa-solid fa-users"></i> Recent Customers</h3>
+    <a href="{{ url_for('add_customer') }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-plus"></i> Add New</a></div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Phone</th><th>Place</th><th>Joined</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for c in recent_customers %}
+      <tr>
+        <td><strong>{{ c.name }}</strong></td>
+        <td>{{ c.phone }}</td>
+        <td class="muted">{{ c.place or '—' }}</td>
+        <td class="muted">{{ c.created_at.strftime('%d %b %Y') }}</td>
+        <td><a href="{{ url_for('customer_profile', cid=c.id) }}" class="btn btn-xs btn-ghost"><i class="fa-solid fa-eye"></i></a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="empty-row">No customers yet</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

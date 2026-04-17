@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Customers{% endblock %}
+{% block page_title %}<i class="fa-solid fa-users"></i> Customers{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <form method="GET" class="search-form">
+    <div class="search-box">
+      <i class="fa-solid fa-search"></i>
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by name or phone...">
+      {% if q %}<a href="{{ url_for('customers') }}" class="clear-search">×</a>{% endif %}
+    </div>
+    <button type="submit" class="btn btn-ghost">Search</button>
+  </form>
+  <a href="{{ url_for('add_customer') }}" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Add Customer</a>
+</div>
+
+<div class="glass-card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Email</th><th>Place</th><th>Registered</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for c in customers %}
+      <tr>
+        <td class="muted">{{ loop.index }}</td>
+        <td><strong>{{ c.name }}</strong></td>
+        <td>{{ c.phone }}</td>
+        <td class="muted">{{ c.email or '—' }}</td>
+        <td class="muted">{{ c.place or '—' }}</td>
+        <td class="muted">{{ c.created_at.strftime('%d %b %Y') }}</td>
+        <td class="actions-cell">
+          <a href="{{ url_for('customer_profile', cid=c.id) }}" class="btn btn-xs btn-ghost" title="View Profile"><i class="fa-solid fa-eye"></i></a>
+          <a href="{{ url_for('edit_customer', cid=c.id) }}" class="btn btn-xs btn-blue" title="Edit"><i class="fa-solid fa-pen"></i></a>
+          <button onclick="confirmDelete('{{ url_for('delete_customer', cid=c.id) }}','Delete customer {{ c.name }}?')" class="btn btn-xs btn-danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="empty-row">
+        {% if q %}No results for "{{ q }}"{% else %}No customers yet. <a href="{{ url_for('add_customer') }}">Add one!</a>{% endif %}
+      </td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

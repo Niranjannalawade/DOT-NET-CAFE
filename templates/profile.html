@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }} — Profile{% endblock %}
+{% block page_title %}<i class="fa-solid fa-id-card"></i> Customer Profile{% endblock %}
+
+{% block content %}
+
+{# ── Profile Header ──────────────────────────────────────────────── #}
+<div class="profile-header">
+  <div class="profile-avatar-wrap">
+    <div class="profile-avatar">{{ customer.name[0].upper() }}</div>
+    <div class="avatar-ring"></div>
+  </div>
+  <div class="profile-info">
+    <h2>{{ customer.name }}</h2>
+    <div class="profile-meta">
+      <span><i class="fa-solid fa-phone"></i> {{ customer.phone }}</span>
+      {% if customer.email %}<span><i class="fa-solid fa-envelope"></i> {{ customer.email }}</span>{% endif %}
+      {% if customer.place %}<span><i class="fa-solid fa-location-dot"></i> {{ customer.place }}</span>{% endif %}
+      <span><i class="fa-solid fa-calendar-check"></i> Since {{ customer.created_at.strftime('%d %b %Y') }}</span>
+    </div>
+  </div>
+  <div class="profile-actions">
+    <a href="{{ url_for('edit_customer', cid=customer.id) }}" class="btn btn-blue">
+      <i class="fa-solid fa-pen"></i> Edit
+    </a>
+    <button onclick="confirmDelete('{{ url_for('delete_customer', cid=customer.id) }}',
+      'Delete {{ customer.name }} and ALL their data permanently?')" class="btn btn-danger">
+      <i class="fa-solid fa-trash"></i> Delete
+    </button>
+    <a href="{{ url_for('billing') }}" class="btn btn-primary">
+      <i class="fa-solid fa-file-invoice"></i> New Bill
+    </a>
+  </div>
+</div>
+
+{# ── Quick Stats ─────────────────────────────────────────────────── #}
+<div class="quick-stats">
+  <div class="qs-card" style="--c:#00d4ff">
+    <i class="fa-solid fa-folder-open"></i>
+    <div class="qs-num">{{ documents|length }}</div>
+    <div class="qs-label">Documents</div>
+  </div>
+  <div class="qs-card" style="--c:#7c3aed">
+    <i class="fa-solid fa-receipt"></i>
+    <div class="qs-num">{{ bills|length }}</div>
+    <div class="qs-label">Bills</div>
+  </div>
+  <div class="qs-card" style="--c:#10b981">
+    <i class="fa-solid fa-indian-rupee-sign"></i>
+    <div class="qs-num">₹{{ "%.0f"|format(total_spent) }}</div>
+    <div class="qs-label">Total Spent</div>
+  </div>
+  <div class="qs-card" style="--c:#f59e0b">
+    <i class="fa-solid fa-bolt"></i>
+    <div class="qs-num">{{ activities|length }}</div>
+    <div class="qs-label">Activities</div>
+  </div>
+</div>
+
+{# ── Documents + Activity ─────────────────────────────────────────── #}
+<div class="profile-grid">
+
+  {# ══ DOCUMENTS PANEL ══════════════════════════════════════════════ #}
+  <div class="glass-card doc-panel">
+
+    <div class="card-header">
+      <h3>
+        <i class="fa-solid fa-folder-open"></i> Documents
+        {% if documents %}<span class="doc-count-badge">{{ documents|length }}</span>{% endif %}
+      </h3>
+      <span class="folder-badge" title="Customer documents saved here">
+        <i class="fa-solid fa-folder"></i> uploads/{{ folder_name }}/
+      </span>
+    </div>
+
+    {# ── Three action buttons ─────────────────────────────────────── #}
+    <div class="upload-action-row">
+
+      {# 1 — Regular upload via file picker #}
+      <button type="button" class="btn btn-ghost btn-upload-trigger"
+              onclick="document.getElementById('docFileInput').click()"
+              title="Browse your computer and upload any file">
+        <i class="fa-solid fa-cloud-arrow-up"></i> Upload File
+      </button>
+
+      {# 2 — Scan & Upload: reads latest file from scanner folder #}
+      <button type="button" class="btn btn-scan" id="btnScanFolder"
+              onclick="importFromScannerFolder({{ customer.id }})"
+              title="Import the latest scanned file from the scanner folder automatically">
+        <i class="fa-solid fa-scanner-image"></i> Scan &amp; Upload
+      </button>
+
+      {# 3 — Settings gear: configure scanner folder path #}
+      <button type="button" class="btn btn-ghost btn-icon"
+              onclick="toggleScannerSettings()"
+              title="Configure scanner save folder">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+
+    </div>
+
+    {# ── Scanner folder settings panel (collapsed by default) ─────── #}
+    <div class="scanner-settings-panel" id="scannerSettingsPanel" style="display:none">
+
+      <div class="scanner-settings-inner">
+        <div class="scanner-settings-title">
+          <i class="fa-solid fa-folder-gear"></i>
+          Scanner Watch Folder
+        </div>
+        <p class="scanner-settings-desc">
+          Enter the exact folder path where your scanner software saves scanned files.
+          The <strong>Scan &amp; Upload</strong> button will automatically pick up
+          the <em>newest file</em> from this folder.
+        </p>
+
+        {# Current path display #}
+        {% if scanner_path %}
+        <div class="scanner-current-path">
+          <i class="fa-solid fa-check-circle" style="color:var(--green)"></i>
+          <span>Currently watching: <code>{{ scanner_path }}</code></span>
+        </div>
+        {% else %}
+        <div class="scanner-current-path scanner-not-set">
+          <i class="fa-solid fa-triangle-exclamation" style="color:var(--amber)"></i>
+          <span>Scanner folder not configured yet.</span>
+        </div>
+        {% endif %}
+
+        {# Latest file preview #}
+        {% if latest_scan %}
+        <div class="latest-scan-preview">
+          <i class="fa-solid fa-file-circle-check" style="color:var(--accent)"></i>
+          <div>
+            <div class="lsp-name">{{ latest_scan.name }}</div>
+            <div class="lsp-meta">{{ latest_scan.size }} &bull; Modified {{ latest_scan.modified }}</div>
+          </div>
+          <span class="lsp-badge">Latest scan ready</span>
+        </div>
+        {% endif %}
+
+        {# Path input + save #}
+        <div class="scanner-path-form">
+          <input type="text"
+                 id="scannerPathInput"
+                 placeholder="e.g.  C:\Users\Admin\Documents\Scans"
+                 value="{{ scanner_path }}"
+                 spellcheck="false">
+          <button type="button" class="btn btn-primary btn-sm"
+                  onclick="saveScannerPath()">
+            <i class="fa-solid fa-save"></i> Save Path
+          </button>
+        </div>
+
+        {# Quick path examples #}
+        <div class="scanner-examples">
+          <span class="se-label">Common paths:</span>
+          <button class="se-pill" onclick="setExamplePath('C:\\Users\\Admin\\Documents\\Scans')">
+            Documents\Scans
+          </button>
+          <button class="se-pill" onclick="setExamplePath('C:\\Users\\Admin\\Desktop\\Scans')">
+            Desktop\Scans
+          </button>
+          <button class="se-pill" onclick="setExamplePath('D:\\Scans')">
+            D:\Scans
+          </button>
+        </div>
+
+        {# Status message inside settings panel #}
+        <div id="settingsStatus" class="settings-status" style="display:none"></div>
+      </div>
+    </div>
+
+    {# ── Scan progress / status toast ─────────────────────────────── #}
+    <div id="scanToast" class="scan-toast" style="display:none">
+      <div class="scan-toast-inner">
+        <span id="scanToastMsg"></span>
+      </div>
+    </div>
+
+    {# ── Regular upload form + drop zone ──────────────────────────── #}
+    <form id="uploadForm"
+          action="{{ url_for('upload_document', customer_id=customer.id) }}"
+          method="POST"
+          enctype="multipart/form-data">
+
+      <div class="upload-zone" id="uploadZone"
+           ondragover="handleDragOver(event)"
+           ondragleave="handleDragLeave(event)"
+           ondrop="handleDrop(event)">
+        <div class="upload-zone-inner"
+             onclick="document.getElementById('docFileInput').click()">
+          <div class="upload-icon-wrap">
+            <i class="fa-solid fa-cloud-arrow-up upload-cloud-icon"></i>
+          </div>
+          <p class="upload-main-text">
+            Drop files here or <span class="upload-link">click to browse</span>
+          </p>
+          <p class="upload-sub-text">PDF · JPG · PNG · DOCX · TXT &nbsp;·&nbsp; Max 16 MB</p>
+          <div id="filePreviewBar" class="file-preview-bar" style="display:none">
+            <i class="fa-solid fa-file-circle-check"></i>
+            <span id="filePreviewName"></span>
+            <span id="filePreviewSize" class="file-preview-size"></span>
+          </div>
+        </div>
+        <input type="file" id="docFileInput" name="document"
+               accept=".pdf,.jpg,.jpeg,.png,.gif,.docx,.doc,.txt"
+               style="display:none" onchange="onFileChosen(this)">
+      </div>
+
+      <div id="uploadBtnWrap" class="upload-btn-wrap" style="display:none">
+        <button type="submit" class="btn btn-primary btn-upload-go"
+                onclick="showUploadSpinner(this)">
+          <i class="fa-solid fa-upload"></i> Upload File
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="clearFileChoice()">
+          <i class="fa-solid fa-times"></i> Cancel
+        </button>
+      </div>
+    </form>
+
+    {# Hidden input for manual scan picker (fallback) #}
+    <input type="file" id="scanFileInput"
+           accept=".pdf,.jpg,.jpeg,.png,.gif,.docx,.doc,.txt"
+           style="display:none"
+           onchange="uploadScan(this, {{ customer.id }})">
+
+    {# ── Document list ─────────────────────────────────────────────── #}
+    <div class="doc-list" id="docList">
+      {% if documents %}
+        {% for doc in documents %}
+        <div class="doc-item" id="doc-item-{{ doc.id }}">
+          <div class="doc-thumb {% if doc.is_image %}doc-thumb-img{% endif %}">
+            {% if doc.is_image %}
+              <img src="{{ url_for('view_document', did=doc.id) }}"
+                   alt="{{ doc.original_name }}" loading="lazy"
+                   onerror="this.parentElement.innerHTML='<i class=\'fa-solid {{ doc.icon[0] }}\' ></i>'">
+            {% else %}
+              <i class="fa-solid {{ doc.icon[0] }} {{ doc.icon[1] }}"></i>
+            {% endif %}
+          </div>
+          <div class="doc-info">
+            <div class="doc-name" title="{{ doc.original_name }}">{{ doc.original_name }}</div>
+            <div class="doc-meta">
+              <span class="doc-ext-badge">{{ doc.ext.upper() }}</span>
+              <span>{{ doc.size_str }}</span>
+              <span>{{ doc.upload_date.strftime('%d %b %Y, %H:%M') }}</span>
+            </div>
+          </div>
+          <div class="doc-actions">
+            <a href="{{ url_for('view_document', did=doc.id) }}" target="_blank"
+               rel="noopener" class="btn btn-xs btn-ghost" title="Open in new tab">
+              <i class="fa-solid fa-eye"></i>
+            </a>
+            <a href="{{ url_for('download_document', did=doc.id) }}"
+               class="btn btn-xs btn-ghost" title="Download">
+              <i class="fa-solid fa-download"></i>
+            </a>
+            <button onclick="confirmDelete(
+                      '{{ url_for('delete_document', did=doc.id) }}',
+                      'Delete &quot;{{ doc.original_name }}&quot;?')"
+                    class="btn btn-xs btn-danger" title="Delete">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state" id="noDocsPlaceholder">
+          <i class="fa-solid fa-folder-open"></i>
+          <p>No documents uploaded yet</p>
+          <small>Scan a document, then click <strong>Scan &amp; Upload</strong></small>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ══ ACTIVITY PANEL ════════════════════════════════════════════════ #}
+  <div class="glass-card">
+    <div class="card-header">
+      <h3><i class="fa-solid fa-timeline"></i> Activity Log</h3>
+    </div>
+    <form action="{{ url_for('add_activity', cid=customer.id) }}" method="POST" class="mb-3">
+      <div class="inline-form">
+        <input type="text" name="description"
+               placeholder="e.g. Printed 5 pages, Aadhaar scan…"
+               required maxlength="480">
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="fa-solid fa-plus"></i> Log
+        </button>
+      </div>
+    </form>
+    <div class="activity-feed">
+      {% for act in activities %}
+      <div class="activity-item">
+        <div class="activity-dot"></div>
+        <div class="activity-content">
+          <div class="activity-desc">{{ act.description }}</div>
+          <div class="activity-meta">{{ act.date.strftime('%d %b %Y, %H:%M') }}</div>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state small">
+        <i class="fa-solid fa-inbox"></i><p>No activities yet</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+{# ── Billing History ──────────────────────────────────────────────── #}
+<div class="glass-card mt-4">
+  <div class="card-header">
+    <h3><i class="fa-solid fa-receipt"></i> Billing History</h3>
+    <a href="{{ url_for('billing') }}" class="btn btn-sm btn-primary">
+      <i class="fa-solid fa-plus"></i> New Bill
+    </a>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Invoice #</th><th>Date</th><th>Subtotal</th><th>Discount</th><th>Total</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+      {% for b in bills %}
+        <tr>
+          <td><span class="badge badge-blue">{{ b.invoice_number }}</span></td>
+          <td class="muted">{{ b.date.strftime('%d %b %Y') }}</td>
+          <td>₹{{ "%.2f"|format(b.subtotal) }}</td>
+          <td class="text-green">-₹{{ "%.2f"|format(b.discount) }}</td>
+          <td class="amount"><strong>₹{{ "%.2f"|format(b.total) }}</strong></td>
+          <td>
+            <a href="{{ url_for('invoice_view', bid=b.id) }}" class="btn btn-xs btn-ghost">
+              <i class="fa-solid fa-eye"></i> View
+            </a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="empty-row">No bills yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const CUSTOMER_ID  = {{ customer.id }};
+  const SCANNER_PATH = {{ ('"' + scanner_path + '"') if scanner_path else '""' }};
+</script>
+{% endblock %}
